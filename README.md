@@ -63,7 +63,7 @@ RunAll	             Fetch alerts + check replies, write to Excel
 RunAllAndSendEmail	 RunAll + email summary
 ```
 
-## VBA logic excerpt (company project, full code not disclosed)
+## VBA logic excerpt (Internal project, source code private)
 
 ```
 For i = inboxFolder.Items.Count To 1 Step -1
