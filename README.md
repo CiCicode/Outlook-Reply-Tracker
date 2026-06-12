@@ -1,4 +1,4 @@
-# Outlook-Reply-Tracker
+# Outlook Microsoft 365 Reply Tracker
 A VBA + Outlook automation tool that tracks email responses and sends daily summary reports.
 
 工具：
