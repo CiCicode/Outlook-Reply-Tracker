@@ -17,7 +17,7 @@ Excel VBA (Macro) + Outlook COM + Windows Task Scheduler
 ```
 Subject: [Auto Notification] Daily Summary - June
 
-本月通知清單：
+Monthly Notification List:
 
 Department      Date        Replied   Reply Time           Subject
 Trading Desk    2026/06/04  Yes       2026/06/05 08:06     Trading Desk Alert Notice
