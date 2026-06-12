@@ -1,0 +1,334 @@
+Attribute VB_Name = "ModuleFullProcess"
+Option Explicit
+
+Public Sub RunAll()
+    Dim outlookApp As Outlook.Application
+    Dim outlookNS As Outlook.NameSpace
+    Dim inboxFolder As Outlook.MAPIFolder
+    Dim ws As Worksheet
+    Dim notifyMail As Outlook.MailItem
+    Dim item As Object
+    Dim i As Long
+    Dim row As Long
+    Dim notifyDate As String
+    Dim deptName As String
+    Dim subjectText As String
+    Dim bodyText As String
+    Dim notifySubject As String
+    Dim replyDt As Date
+    Dim excludeAddr As String
+    
+    excludeAddr = "alert@company.com"
+    
+    Set ws = ThisWorkbook.Sheets(1)
+    ws.Cells.ClearContents
+    
+    ws.Cells(1, 1).Value = ChrW(21934) & ChrW(20301) & ChrW(21517) & ChrW(31281)
+    ws.Cells(1, 2).Value = ChrW(36890) & ChrW(30693) & ChrW(26085) & ChrW(26399)
+    ws.Cells(1, 3).Value = ChrW(26159) & ChrW(21542) & ChrW(22238) & ChrW(35206)
+    ws.Cells(1, 4).Value = ChrW(22238) & ChrW(35206) & ChrW(26178) & ChrW(38291)
+    ws.Cells(1, 5).Value = ChrW(20027) & ChrW(26088)
+    ws.Cells(1, 6).Value = ChrW(20839) & ChrW(23481) & ChrW(27010) & ChrW(36848)
+    
+    ws.Range("A1:F1").Font.Bold = True
+    
+    Set outlookApp = New Outlook.Application
+    Set outlookNS = outlookApp.GetNamespace("MAPI")
+    Set inboxFolder = outlookNS.GetDefaultFolder(olFolderInbox)
+    
+    row = 2
+    
+    For i = inboxFolder.Items.Count To 1 Step -1
+        Set item = inboxFolder.Items(i)
+        
+        If TypeOf item Is Outlook.MailItem Then
+            Set notifyMail = item
+            
+            If Year(notifyMail.ReceivedTime) <> Year(Now) Or _
+               Month(notifyMail.ReceivedTime) <> Month(Now) Then
+                GoTo SkipItem
+            End If
+            
+            Dim senderAddr As String
+            On Error Resume Next
+            senderAddr = GetSenderSMTP(notifyMail)
+            If Err.Number <> 0 Then senderAddr = ""
+            On Error GoTo 0
+            
+            If InStr(1, LCase(senderAddr), LCase(excludeAddr), vbTextCompare) > 0 Then
+                notifySubject = Trim(notifyMail.Subject)
+                
+                If InStr(1, notifySubject, "ANC", vbTextCompare) > 0 And _
+                   InStr(1, notifySubject, ChrW(36890) & ChrW(30693), vbTextCompare) > 0 Then
+                    
+                    notifyDate = Left(notifySubject, 8)
+                    deptName = ExtractDeptName(notifySubject)
+                    subjectText = notifySubject
+                    
+                    If notifyMail.Body <> "" Then
+                        bodyText = Replace(notifyMail.Body, vbCrLf, " ")
+                        bodyText = Replace(bodyText, vbCr, " ")
+                        bodyText = Replace(bodyText, vbLf, " ")
+                        bodyText = Trim(bodyText)
+                        If Len(bodyText) > 200 Then bodyText = Left(bodyText, 200)
+                    ElseIf notifyMail.BodyPreview <> "" Then
+                        bodyText = notifyMail.BodyPreview
+                    Else
+                        bodyText = ""
+                    End If
+                    
+                    If Len(bodyText) >= 9 Then
+                        If IsNumeric(Left(bodyText, 8)) And Mid(bodyText, 9, 1) = " " Then
+                            bodyText = Trim(Mid(bodyText, 10))
+                        End If
+                    End If
+                    
+                    ws.Cells(row, 1).Value = deptName
+                    ws.Cells(row, 2).Value = CDate(Format(notifyMail.ReceivedTime, "yyyy/mm/dd"))
+                    ws.Cells(row, 2).NumberFormat = "yyyy/m/d"
+                    ws.Cells(row, 5).Value = subjectText
+                    ws.Cells(row, 6).Value = bodyText
+                    
+                    replyDt = Empty
+                    If FindReplyMailInFolder(inboxFolder, notifyDate, excludeAddr, replyDt) Or _
+                       FindReplyMailInSubFolders(inboxFolder, notifyDate, excludeAddr, replyDt) Then
+                        ws.Cells(row, 3).Value = ChrW(26159)
+                        ws.Cells(row, 4).Value = replyDt
+                        ws.Cells(row, 4).NumberFormat = "yyyy/m/d h:mm"
+                        ws.Cells(row, 4).HorizontalAlignment = -4131
+                    Else
+                        ws.Cells(row, 3).Value = ChrW(21542)
+                        ws.Cells(row, 4).Value = ""
+                    End If
+                    
+                    row = row + 1
+                End If
+            End If
+        End If
+SkipItem:
+    Next i
+    
+    Set inboxFolder = Nothing
+    Set outlookNS = Nothing
+    Set outlookApp = Nothing
+    
+    MsgBox ChrW(23436) & ChrW(25104) & ChrW(65281) & ChrW(24050) & ChrW(26908) & ChrW(26597) & " " & (row - 2) & " " & ChrW(31558) & ChrW(36039) & ChrW(12290)
+End Sub
+
+Public Sub RunAllAndSendEmail()
+    Dim outlookApp As Outlook.Application
+    Dim mail As Outlook.MailItem
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim i As Long
+    Dim bodyHTML As String
+    Dim monthName As String
+    Dim monthEN As Variant
+    
+    RunAll
+    
+    Set ws = ThisWorkbook.Sheets(1)
+    lastRow = ws.Cells(ws.Rows.Count, "E").End(xlUp).Row
+    
+    If lastRow < 2 Then
+        MsgBox ChrW(27794) & ChrW(26377) & ChrW(36039) & ChrW(26009) & ChrW(38627) & ChrW(29702)
+        Exit Sub
+    End If
+    
+    monthEN = Array("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
+    monthName = monthEN(Month(Now) - 1)
+    
+    bodyHTML = "<html><body style='font-family:Microsoft JhengHei, Arial, sans-serif; font-size:10pt;'>"
+    bodyHTML = bodyHTML & "<p style='font-size:12pt; margin:0 0 8px 0;'>" & ChrW(26412) & ChrW(26376) & ChrW(36890) & ChrW(30693) & ChrW(28165) & ChrW(21934) & ChrW(65306) & "</p>"
+    bodyHTML = bodyHTML & "<table style='border-collapse:collapse; font-size:10pt; font-family:Consolas, Microsoft JhengHei, Arial, sans-serif;' cellspacing='0' cellpadding='0'>"
+    bodyHTML = bodyHTML & "<tr>"
+    bodyHTML = bodyHTML & "<td style='padding:5px 14px;'><b>" & ChrW(21934) & ChrW(20301) & ChrW(21517) & ChrW(31281) & "</b></td>"
+    bodyHTML = bodyHTML & "<td style='padding:5px 14px;'><b>" & ChrW(36890) & ChrW(30693) & ChrW(26085) & ChrW(26399) & "</b></td>"
+    bodyHTML = bodyHTML & "<td style='padding:5px 14px;'><b>" & ChrW(26159) & ChrW(21542) & ChrW(22238) & ChrW(35206) & "</b></td>"
+    bodyHTML = bodyHTML & "<td style='padding:5px 14px;'><b>" & ChrW(22238) & ChrW(35206) & ChrW(26178) & ChrW(38291) & "</b></td>"
+    bodyHTML = bodyHTML & "<td style='padding:5px 14px;'><b>" & ChrW(20027) & ChrW(26088) & "</b></td>"
+    bodyHTML = bodyHTML & "<td style='padding:5px 14px;'><b>" & ChrW(20839) & ChrW(23481) & ChrW(27010) & ChrW(36848) & "</b></td>"
+    bodyHTML = bodyHTML & "</tr>"
+    
+    For i = 2 To lastRow
+        Dim c1 As String, c2 As String, c3 As String, c4 As String, c5 As String, c6 As String
+        c1 = CStr(ws.Cells(i, 1).Value)
+        If IsDate(ws.Cells(i, 2).Value) Then
+            c2 = Format(ws.Cells(i, 2).Value, "yyyy/MM/dd")
+        Else
+            c2 = CStr(ws.Cells(i, 2).Value)
+        End If
+        c3 = CStr(ws.Cells(i, 3).Value)
+        If IsDate(ws.Cells(i, 4).Value) Then
+            c4 = Format(ws.Cells(i, 4).Value, "yyyy/MM/dd h:mm")
+        Else
+            c4 = CStr(ws.Cells(i, 4).Value)
+        End If
+        c5 = CStr(ws.Cells(i, 5).Value)
+        c6 = CStr(ws.Cells(i, 6).Value)
+        
+        bodyHTML = bodyHTML & "<tr>"
+        bodyHTML = bodyHTML & "<td style='padding:5px 14px;'>" & c1 & "</td>"
+        bodyHTML = bodyHTML & "<td style='padding:5px 14px; white-space:nowrap;'>" & c2 & "</td>"
+        bodyHTML = bodyHTML & "<td style='padding:5px 14px;'>" & c3 & "</td>"
+        bodyHTML = bodyHTML & "<td style='padding:5px 14px; white-space:nowrap;'>" & c4 & "</td>"
+        bodyHTML = bodyHTML & "<td style='padding:5px 14px;'>" & EscapeHTML(c5) & "</td>"
+        bodyHTML = bodyHTML & "<td style='padding:5px 14px;'>" & EscapeHTML(c6) & "</td>"
+        bodyHTML = bodyHTML & "</tr>"
+    Next i
+    
+    bodyHTML = bodyHTML & "</table></body></html>"
+    
+    Set outlookApp = New Outlook.Application
+    Set mail = outlookApp.CreateItem(olMailItem)
+    
+    With mail
+        .To = "manager@company.com"
+        .Subject = ChrW(12304) & ChrW(33258) & ChrW(21205) & ChrW(36890) & ChrW(30693) & ChrW(12305) & "ANC" & ChrW(20302) & ChrW(26044) & ChrW(35686) & ChrW(31034) & ChrW(20540) & " " & monthName & " " & ChrW(24409) & ChrW(32317) & ChrW(28165) & ChrW(21934)
+        .HTMLBody = bodyHTML
+        .Send
+    End With
+    
+    Set mail = Nothing
+    Set outlookApp = Nothing
+    
+    MsgBox ChrW(20498) & ChrW(20449) & ChrW(24050) & ChrW(26597) & ChrW(23436) & ChrW(25104) & "!"
+End Sub
+
+Private Function EscapeHTML(ByVal text As String) As String
+    Dim result As String
+    result = text
+    result = Replace(result, "&", "&amp;")
+    result = Replace(result, "<", "&lt;")
+    result = Replace(result, ">", "&gt;")
+    EscapeHTML = result
+End Function
+
+Private Function GetSenderSMTP(ByVal mail As Outlook.MailItem) As String
+    Dim sender As String
+    
+    On Error Resume Next
+    sender = mail.PropertyAccessor.GetProperty( _
+        "http://schemas.microsoft.com/mapi/proptag/0x5D01001E")
+    If Err.Number <> 0 Then
+        On Error GoTo 0
+        sender = mail.SenderEmailAddress
+    End If
+    On Error GoTo 0
+    
+    GetSenderSMTP = sender
+End Function
+
+Private Function ExtractDeptName(ByVal subject As String) As String
+    Dim startPos As Long
+    Dim endPos As Long
+    
+    startPos = 10
+    endPos = InStr(startPos, subject, "ANC", vbTextCompare)
+    If endPos > 0 Then
+        ExtractDeptName = Trim(Mid(subject, startPos, endPos - startPos))
+    Else
+        ExtractDeptName = ""
+    End If
+End Function
+
+Private Function FindReplyMailInFolder(ByVal folder As Outlook.MAPIFolder, _
+                                       ByVal dateStr As String, _
+                                       ByVal excludeAddr As String, _
+                                       ByRef replyTime As Date) As Boolean
+    Dim mailItem As Outlook.MailItem
+    Dim i As Long
+    Dim item As Object
+    Dim senderAddr As String
+    
+    For i = folder.Items.Count To 1 Step -1
+        Set item = folder.Items(i)
+        
+        If TypeOf item Is Outlook.MailItem Then
+            Set mailItem = item
+            
+            On Error Resume Next
+            senderAddr = GetSenderSMTP(mailItem)
+            If Err.Number <> 0 Then senderAddr = ""
+            On Error GoTo 0
+            
+            If InStr(1, LCase(senderAddr), LCase(excludeAddr), vbTextCompare) = 0 And senderAddr <> "" Then
+                If SubjectMatchesReply(Trim(mailItem.Subject), dateStr) Then
+                    replyTime = mailItem.ReceivedTime
+                    FindReplyMailInFolder = True
+                    Set mailItem = Nothing
+                    Set item = Nothing
+                    Exit Function
+                End If
+            End If
+        End If
+    Next i
+    
+    FindReplyMailInFolder = False
+End Function
+
+Private Function FindReplyMailInSubFolders(ByVal parentFolder As Outlook.MAPIFolder, _
+                                           ByVal dateStr As String, _
+                                           ByVal excludeAddr As String, _
+                                           ByRef replyTime As Date) As Boolean
+    Dim subFolder As Outlook.MAPIFolder
+    
+    If parentFolder.Folders.Count = 0 Then
+        FindReplyMailInSubFolders = False
+        Exit Function
+    End If
+    
+    For Each subFolder In parentFolder.Folders
+        If FindReplyMailInFolder(subFolder, dateStr, excludeAddr, replyTime) Then
+            FindReplyMailInSubFolders = True
+            Exit Function
+        End If
+        If FindReplyMailInSubFolders(subFolder, dateStr, excludeAddr, replyTime) Then
+            FindReplyMailInSubFolders = True
+            Exit Function
+        End If
+    Next subFolder
+    
+    FindReplyMailInSubFolders = False
+End Function
+
+Private Function SubjectMatchesReply(ByVal mailSubject As String, _
+                                     ByVal dateStr As String) As Boolean
+    Dim cleanSubject As String
+    
+    cleanSubject = StripPrefixes(mailSubject)
+    
+    If cleanSubject = "" Then
+        SubjectMatchesReply = False
+        Exit Function
+    End If
+    
+    SubjectMatchesReply = (InStr(1, cleanSubject, dateStr, vbTextCompare) > 0) And _
+                          (InStr(1, cleanSubject, "ANC", vbTextCompare) > 0)
+End Function
+
+Private Function StripPrefixes(ByVal text As String) As String
+    Dim prefixes As Variant
+    Dim p As Variant
+    Dim prev As String
+    
+    prefixes = Array("RE:", "FW:", "FWD:", _
+                     "RE" & ChrW(65306), "FW" & ChrW(65306), "FWD" & ChrW(65306), _
+                     ChrW(22238) & ChrW(22797) & ":", ChrW(22238) & ChrW(35206) & ":", _
+                     ChrW(36716) & ChrW(21457) & ":", ChrW(36681) & ChrW(30330) & ":", _
+                     ChrW(22238) & ChrW(22797) & ChrW(65306), ChrW(22238) & ChrW(35206) & ChrW(65306), _
+                     ChrW(36716) & ChrW(21457) & ChrW(65306), ChrW(36681) & ChrW(30330) & ChrW(65306), _
+                     ChrW(12304) & ChrW(22806) & ChrW(37096) & ChrW(12305), "[External]", _
+                     "[" & ChrW(22806) & ChrW(37096) & "]")
+    
+    Do
+        prev = text
+        For Each p In prefixes
+            If UCase(Left(Trim(text), Len(p))) = UCase(p) Then
+                text = Trim(Mid(text, Len(p) + 1))
+            End If
+        Next p
+    Loop While prev <> text
+    
+    StripPrefixes = text
+End Function
