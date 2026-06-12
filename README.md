@@ -31,7 +31,6 @@ outlook-notification-tracker/
 2. Extracts: department name, date, subject, body summary
 3. Searches for **reply** emails (same date + keyword, different sender)
 4. Writes results to Excel (replied → `Yes` + timestamp, not replied → `No`)
-5. Emails a formatted summary to `manager@company.com`
 
 ### Email Output Example
 
@@ -51,7 +50,6 @@ Risk Management 2026/06/02  No                             Risk Management Alert
 - Windows 10/11
 - Microsoft Excel (macros enabled)
 - Microsoft Outlook
-- Alert emails in Inbox from `alert@company.com`
 
 ## Setup
 
