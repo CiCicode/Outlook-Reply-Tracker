@@ -12,6 +12,19 @@ Excel VBA (Macro) + Outlook COM + Windows Task Scheduler
 價值：
 取代人工逐一檢查 Outlook 的作業，節省每天 15-30 分鐘，確保不漏追回覆，並自動產出報表留存。
 
+### Email Output Example
+
+```
+Subject: [Auto Notification] Daily Summary - June
+
+本月通知清單：
+
+Department      Date        Replied   Reply Time           Subject
+Trading Desk    2026/06/04  Yes       2026/06/05 08:06     Trading Desk Alert Notice
+Trading Desk    2026/06/03  Yes       2026/06/03 19:00     Trading Desk Alert Notice
+Risk Management 2026/06/02  No                             Risk Management Alert Notice
+```
+
 ## Project Structure
 
 ```
@@ -31,19 +44,6 @@ outlook-notification-tracker/
 2. Extracts: department name, date, subject, body summary
 3. Searches for **reply** emails (same date + keyword, different sender)
 4. Writes results to Excel (replied → `Yes` + timestamp, not replied → `No`)
-
-### Email Output Example
-
-```
-Subject: [Auto Notification] Daily Summary - June
-
-本月通知清單：
-
-Department      Date        Replied   Reply Time           Subject
-Trading Desk    2026/06/04  Yes       2026/06/05 08:06     Trading Desk Alert Notice
-Trading Desk    2026/06/03  Yes       2026/06/03 19:00     Trading Desk Alert Notice
-Risk Management 2026/06/02  No                             Risk Management Alert Notice
-```
 
 ## Requirements
 
