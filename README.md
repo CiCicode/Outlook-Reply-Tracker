@@ -2,7 +2,7 @@
 A VBA + Outlook automation tool that tracks email responses and sends daily summary reports.
 
 工具：
-Excel VBA (Macro) + Outlook COM + Windows Task Scheduler
+Excel VBA (Macro) + Outlook + Windows Task Scheduler
 
 做什麼事：
 1. 每日掃描收件匣中特定寄件者的通知信
