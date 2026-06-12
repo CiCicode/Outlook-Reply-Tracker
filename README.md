@@ -17,7 +17,7 @@ Excel VBA (Macro) + Outlook COM + Windows Task Scheduler
 ```
 outlook-notification-tracker/
 ├── vba/                          # VBA modules
-│   ├── ModuleFullProcess.bas     # Full pipeline (fetch + check replies + send email)
+│   ├── ModuleFullProcess_DEMO.bas     # Full pipeline (fetch + check replies + send email)
 ├── scripts/
 │   └── RunDaily.vbs              # Task Scheduler trigger script
 ├── excel/                        # Excel workbook template
@@ -53,7 +53,7 @@ Risk Management 2026/06/02  No                             Risk Management Alert
 
 ## Setup
 
-1. Create ReplyTracking.xlsm, import vba/ModuleFullProcess.bas via VBA editor (Alt+F11 > File > Import)
+1. Create ReplyTracking.xlsm, import vba/ModuleFullProcess_DEMO.bas via VBA editor (Alt+F11 > File > Import)
 2. Schedule via Task Scheduler: daily at 09:00, run wscript.exe "C:\Path\RunDaily.vbs"
 
 ## Usage
