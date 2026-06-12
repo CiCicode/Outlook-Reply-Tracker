@@ -41,9 +41,9 @@ Subject: [Auto Notification] Daily Summary - June
 本月通知清單：
 
 Department      Date        Replied   Reply Time           Subject
-Trading Desk    2026/06/04  Yes       2026/06/05 08:06    20260604 Trading Desk Alert Notice
-Trading Desk    2026/06/03  Yes       2026/06/03 19:00    20260603 Trading Desk Alert Notice
-Risk Management 2026/06/02  No                            20260602 Risk Management Alert Notice
+Trading Desk    2026/06/04  Yes       2026/06/05 08:06     Trading Desk Alert Notice
+Trading Desk    2026/06/03  Yes       2026/06/03 19:00     Trading Desk Alert Notice
+Risk Management 2026/06/02  No                             Risk Management Alert Notice
 ```
 
 ## Requirements
