@@ -62,9 +62,10 @@ Macro	               Description
 RunAll	             Fetch alerts + check replies, write to Excel
 RunAllAndSendEmail	 RunAll + email summary
 ```
-```
-VBA logic excerpt (company project, full code not disclosed)
 
+## VBA logic excerpt (company project, full code not disclosed)
+
+```
 For i = inboxFolder.Items.Count To 1 Step -1
     If TypeOf item Is Outlook.MailItem Then
         If sender = "alert@company.com" And InStr(subject, "ANC") Then
